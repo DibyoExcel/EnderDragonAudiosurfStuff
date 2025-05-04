@@ -313,7 +313,7 @@ SetRings{ --setup the tracks tunnel rings. the airtexture is the tunnel used whe
 	--shader="VertexColorUnlitTintedAddSmooth",
 	shader = "VertexColorUnlitTintedAddDouble",
 	layer = 13, -- on layer13, these objects won't be part of the glow effect
-	size=0, --22
+	size=fif(jumping, trackWidth*2, 10*(trackWidth/5)), --22
 	offset = fif(jumping, {0,0,0}, {0,1,0}),
 	percentringed=.2,--ifhifi(2,.01),-- .2,
 	airtexture="Bits.png",
