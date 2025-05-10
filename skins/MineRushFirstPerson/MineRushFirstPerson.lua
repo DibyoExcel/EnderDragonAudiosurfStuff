@@ -227,7 +227,7 @@ else
 			rot2={30,0,0},
 			transitionspeed = 5,
 			puzzleoffset=-0.5,
-			puzzleoffset2=-1.5},
+			puzzleoffset2=0},
 		vehicle={ --livecoding not supported here
 			use_water_rooster = false,
             smooth_tilting = false
