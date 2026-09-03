@@ -138,9 +138,9 @@ if not jumping then
 			mesh = "block.obj",
 			reflect = false,
 			shader = "VertexColorUnlitTinted",
-			texture = "tnt.png",
+			texture = "colorblocks.png",
 			shadersettings={_Brightness=1.5},
-			--shadercolors = {_Color="static"},
+			shadercolors = {_Color={255, 0, 0, 0}},
 		}
 	}
 end
