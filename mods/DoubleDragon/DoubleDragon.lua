@@ -628,7 +628,8 @@ function OnTrafficCreated(theTraffic)
     return tblocks--traffic -- when you return a traffic table from this function the game will read and apply any changes you made
 end
 
-function InsertLoopyLoop(theTrack, apexNode, circumference)
+function InsertLoopyLoop(theTrack, apexNode, circumference, invert)
+	if type(invert) ~= "boolean" then invert = false end
 	circumference = math.floor(circumference)
 	apexNode = math.floor(apexNode)
     local halfSize = math.floor(circumference / 2)
@@ -643,7 +644,7 @@ function InsertLoopyLoop(theTrack, apexNode, circumference)
     local startTilt = theTrack[startRing].tilt
     local endOriginalTilt = theTrack[endRing].tilt
     local endOriginalPan = theTrack[endRing].pan
-    local tiltDeltaOverEntireLoop = -360 + (endOriginalTilt - startTilt)
+    local tiltDeltaOverEntireLoop = fif(invert, 360, -360) + (endOriginalTilt - startTilt)
     local startPan = theTrack[startRing].pan
     local pan = startPan
 
@@ -653,7 +654,7 @@ function InsertLoopyLoop(theTrack, apexNode, circumference)
     local panRejoinSpan = math.max(circumference*2, 200)
     local panRejoinNode = math.min(#theTrack, endRing + panRejoinSpan)
 
-    if theTrack[panRejoinNode].pan > startPan then
+    if (not invert and theTrack[panRejoinNode].pan > startPan) or (invert and theTrack[panRejoinNode].pan < startPan) then
     	panRate = -panRate -- the loop should bend towards the future track segments naturally
     end
 
@@ -679,13 +680,14 @@ function InsertLoopyLoop(theTrack, apexNode, circumference)
     return theTrack
 end
 
-function InsertCorkscrew(theTrack, startNode, endNode)
+function InsertCorkscrew(theTrack, startNode, endNode, invert)
+	if type(invert) ~= "boolean" then invert = false end
 	startNode = math.floor(startNode)
 	endNode = math.floor(endNode)
-
 	if endNode < #theTrack then
 		local cumulativeRoll = theTrack[startNode].roll
-		local rollIncrement = 360 / (endNode-startNode)
+		local rollIncrement = fif(not invert, 540, -540) / (endNode-startNode)
+		--print("endNode:"..endNode)
 		local endOriginalRoll = theTrack[endNode].roll
 
 	    for i = startNode, endNode do
@@ -705,19 +707,28 @@ function InsertCorkscrew(theTrack, startNode, endNode)
 end
 
 function OnRequestTrackReshaping(theTrack) -- put a loop at each powerpellet to make them easier to see coming
+	--local track2 = theTrack
+	--print("onrequesttrackreshaping. num powernodes "..#powernodes)
+
 	for i=1,#powernodes do
---		if i < #powernodes then --leave the weakest jump as a corkscrew. The rest are loops
-			local size = 100 + 100 * math.max(1,(theTrack[powernodes[i].ring].jumpairtime / 10))
-			theTrack = InsertLoopyLoop(theTrack, powernodes[i].ring, size)
-			if i==1 then--double twist on the strongest loop
-				local quickscrewsize = 65
-				theTrack = InsertCorkscrew(theTrack, powernodes[i].ring, powernodes[i].ring+quickscrewsize)
-				theTrack = InsertCorkscrew(theTrack, powernodes[i].ring+quickscrewsize, powernodes[i].ring+quickscrewsize+size*.75)
-			elseif i==#powernodes then
-				--no twist on the weakest loop
-			else
-				theTrack = InsertCorkscrew(theTrack, powernodes[i].ring, powernodes[i].ring+size*.75)
-			end
+		local size = 100 + 100 * math.max(1,(theTrack[powernodes[i]].jumpairtime / 10))
+		theTrack = InsertLoopyLoop(theTrack, powernodes[i], size)
+		local randomBool = math.random() > 0.5
+		if i==1 then--double twist instant on the strongest loop
+			local startPos = powernodes[i]
+			local quickscrewsize = 75
+			theTrack = InsertCorkscrew(theTrack, startPos, startPos+quickscrewsize, not randomBool)
+			startPos = startPos + quickscrewsize
+			theTrack = InsertCorkscrew(theTrack, startPos, startPos+quickscrewsize, randomBool)
+		else
+			local startPos = powernodes[i]
+			local quickscrewsize = 150
+			local range = 150
+			theTrack = InsertCorkscrew(theTrack, startPos, startPos+quickscrewsize, not randomBool)
+			startPos = startPos + quickscrewsize + range
+			theTrack = InsertCorkscrew(theTrack, startPos, startPos+(quickscrewsize), randomBool)
+			theTrack = InsertLoopyLoop(theTrack, startPos, size, true)
+		end
 	end
 
 	track = theTrack

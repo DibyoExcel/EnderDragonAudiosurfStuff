@@ -7,51 +7,49 @@ end
 calcAntiJumps = false
 randomizeblocktypes = false
 
-
 GameplaySettings{
-	maxstrafe = 9,
-	usepuzzlegrid = true,
-	puzzlerows = 10,
-	puzzlecols = 7,
-	greypercent=0.35,
-	railedblockscanbegrey = true,
-	--colorcount=2,
-	colorcount=1,
-	usetraffic = true,
-	automatic_traffic_collisions = false, -- the game shouldn't check for block collisions since we'll be doing that ourselves in this script
-	jumpmode="none",
-	matchcollectionseconds=1.5,
-	--greyaction="eraseone", -- "eraseall"  -- "eraseblock"
-	greyaction="eraseone",
-	trafficcompression=0.7,
+		usepuzzlegrid = true,
+		puzzlerows = 10,
+		puzzlecols = 3,
+        greypercent=0.35,
+        railedblockscanbegrey = true,
+        --colorcount=2,
+        colorcount=1,
+        usetraffic = true,
+        automatic_traffic_collisions = false, -- the game shouldn't check for block collisions since we'll be doing that ourselves in this script
+        jumpmode="none",
+        matchcollectionseconds=1.5,
+        --greyaction="eraseone", -- "eraseall"  -- "eraseblock"
+        greyaction="eraseone",
+        trafficcompression=0.7,
 
-	--track generation settings
-	gravity=-.45, -- even without jumping the gravity setting is (a little bit) relevant. It's used in generating the track to sculpt it steep enough to allow jumps
-	playerminspeed = 0,--so the player is always moving somewhat
-	playermaxspeed = 5,--2.5
-	minimumbestjumptime = 2.5,--massage the track until a jump of at least this duration is possible
-	uphilltiltscaler = 3.5,--set to 1 for normal track. higher for steeper
-	downhilltiltscaler = 3.5,--set to 1 for normal track. higher for steeper
-	uphilltiltsmoother = 0.025,
-	downhilltiltsmoother = 0.05,
-	useadvancedsteepalgorithm = true,--set false for a less extreme track
-	alldownhill = false,
-	puzzleblockfallinterval = .1,
-	blockflight_secondstopuzzle = .25,
-	calculate_antijumps_and_antitraffic = calcAntiJumps -- build a track that goes down/faster during calm parts of the music to find "anti jumps" and "anti traffic"
-	--end track generation settings
+		--track generation settings
+		gravity=-.45, -- even without jumping the gravity setting is (a little bit) relevant. It's used in generating the track to sculpt it steep enough to allow jumps
+        playerminspeed = 0.1,--so the player is always moving somewhat
+        playermaxspeed = 5,--2.5
+        minimumbestjumptime = 2.5,--massage the track until a jump of at least this duration is possible
+        uphilltiltscaler = 3.5,--set to 1 for normal track. higher for steeper
+        downhilltiltscaler = 3.5,--set to 1 for normal track. higher for steeper
+        uphilltiltsmoother = 0.025,
+        downhilltiltsmoother = 0.05,
+        useadvancedsteepalgorithm = true,--set false for a less extreme track
+        alldownhill = false,
+        puzzleblockfallinterval = .1,
+        blockflight_secondstopuzzle = .25,
+        calculate_antijumps_and_antitraffic = calcAntiJumps -- build a track that goes down/faster during calm parts of the music to find "anti jumps" and "anti traffic"
+		--end track generation settings
 }
 
 SetSkinProperties{
-	lanedividers={-3.5,3.5},
+	lanedividers={-1.5,1.5},
 	shoulderlines={-4.5,4.5},
-	trackwidth = 11,
+	trackwidth = 5,
 	prefersteep = true
 }
 
 player={
 	score=0,
-	prevInput={},
+	prev={},
 	iPrevRing=0,
 	hasFinishedScoringPrevRing=false,
 	uniqueName = "Player",
@@ -330,7 +328,7 @@ function OnTrafficCreated(theTraffic)
 	end
 
     for i = 1, #traffic do
-    	local lane = math.random(-3, 3)
+    	local lane = math.random(-1,1)
     	if traffic[i].type >= 100 then
     		lane = 0 -- powerups default to the center lane
     	end
@@ -353,7 +351,7 @@ function OnTrafficCreated(theTraffic)
     		for k=1,#traffic do
     			if (traffic[k].chainstart <= powerupImpactNode) and (traffic[k].chainend >= powerupImpactNode) and (traffic[k].type < 100) then
     				while traffic[k].lane == powerupLane do
-    					traffic[k].lane = math.random(-3, 3)
+    					traffic[k].lane = math.random(-2,2)
     				end
     			end
     		end
@@ -438,9 +436,9 @@ function OnTrafficCreated(theTraffic)
 	    	if allclear then
 	    		local j = insertloc
 		    	for i=startnode, endnode do
-		    		local la = math.random(-3, 3)
+		    		local la = math.random(-1,1)
 		    		while la == 0 do
-		    			la = math.random(-3, 3)
+		    			la = math.random(-1,1)
 		    		end
 		    		local stra = la * lanespace
 		    		table.insert(traffic, insertloc, {type=5, impactnode=i, chainstart=i, chainend=i, lane=la, strafe=stra, strength=10})
@@ -464,7 +462,7 @@ function OnTrafficCreated(theTraffic)
     		if block.type ~= prevtype then
     			--they're not the same type, so make sure they're not in the same lane
     			while block.lane == prevlane do
-    				block.lane = math.random(-3, 3)
+    				block.lane = math.random(-1,1)
     			end
     		else
     			--they're the same type, so make sure they're in the same lane if they're very close together
@@ -623,10 +621,6 @@ function OnSkinLoaded()-- called after OnTrafficCreated. The skin script has loa
 
 	--CreateClone{name="beaker", prefabName="Vehicle", attachToTrackWithNodeOffset=-1, transform={pos=beakerPos,scale=beakerScale}}
 	--SetScoreboardNote{text="STEALTH"}
-	SetCamera{ -- calling this function (even just once) overrides the camera settings from the skin script
-		pos={0,7,-7.5},
-		rot={30,0,0}
-	}
 end
 
 score = 0 --the global score (in multiplayer, shared by all players co-operatively)
@@ -731,21 +725,9 @@ end
 hitGrey = false
 function Collide(strafe, tracklocation)
 	local playerLane = 0;
-	if strafe == 0 then
-		playerLane = 0
-	elseif (strafe>half_lanespace and strafe<half_lanespace+(half_lanespace*2)) then 
-		playerLane = 1
-	elseif (strafe>half_lanespace+(half_lanespace*2) and strafe<half_lanespace+(half_lanespace*4)) then 
-		playerLane = 2
-	elseif strafe>half_lanespace+(half_lanespace*4) then
-		playerLane = 3
-	elseif (strafe<-half_lanespace and strafe>-(half_lanespace+(half_lanespace*2))) then 
-		playerLane=-1
-	elseif (strafe<-(half_lanespace+(half_lanespace*2)) and strafe>-(half_lanespace+(half_lanespace*4))) then 
-		playerLane=-2 
-	elseif strafe<-(half_lanespace+(half_lanespace*4)) then 
-		playerLane=-3
-	end
+	if strafe>half_lanespace then playerLane = 1
+	elseif strafe<-half_lanespace then playerLane=-1 end
+
 	local collisionTolerenceAhead = .1
 	local collisionToleranceBehind_colors = 2.1
 	local collisionToleranceBehind_greys = .5 -- greys don't get a generous collision window the way colors and powerups do
@@ -807,7 +789,7 @@ function Collide(strafe, tracklocation)
 							end
 
 							if not isPowerup then
-								SetPuzzle{newblocks={{type=blocks[i].type, collision_strafe=blockOffset[1], puzzle_col=blocks[i].lane+3, add_top=true}}}
+								SetPuzzle{newblocks={{type=blocks[i].type, collision_strafe=blockOffset[1], puzzle_col=blocks[i].lane+1, add_top=true}}}
 							else
 								SetPuzzle{timing={matchtimer=0}} -- reset the match timer so matches won't collect as long as ghosts keep getting eaten
 							end
@@ -874,8 +856,12 @@ prevLeftClick = false
 gPlayerStrafe = 0
 function Update(dt, tracklocation, playerstrafe, input) --called every frame
 	--iCurrentRing = math.floor(GetCurrentTrackLocation())
-	--local input = GetInput()
+	local input = GetInput()
 	gPlayerStrafe = playerstrafe
+	if input['mouse'] then
+		score = score +1
+		SetGlobalScore{score=score,showdelta=true}
+	end
 
 	iCurrentRing = math.floor(tracklocation)
 	--local playersInput = input["players"]

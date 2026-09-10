@@ -1,0 +1,1 @@
+If this file exists in a mod, dedicated skins for it are ignored by the game. Useful for moving a mod from using dedicated skins to no longer needed them - without users having to delete the extra skin files that hang around.

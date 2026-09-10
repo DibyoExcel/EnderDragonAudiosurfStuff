@@ -490,7 +490,8 @@ function OnTrafficCreated(theTraffic)
     return blocks--traffic -- when you return a traffic table from this function the game will read and apply any changes you made
 end
 
-function InsertLoopyLoop(theTrack, apexNode, circumference)
+function InsertLoopyLoop(theTrack, apexNode, circumference, invert)
+	if type(invert) ~= "boolean" then invert = false end
 	circumference = math.floor(circumference)
 	apexNode = math.floor(apexNode)
     local halfSize = math.floor(circumference / 2)
@@ -505,7 +506,7 @@ function InsertLoopyLoop(theTrack, apexNode, circumference)
     local startTilt = theTrack[startRing].tilt
     local endOriginalTilt = theTrack[endRing].tilt
     local endOriginalPan = theTrack[endRing].pan
-    local tiltDeltaOverEntireLoop = -360 + (endOriginalTilt - startTilt)
+    local tiltDeltaOverEntireLoop = fif(invert, 360, -360) + (endOriginalTilt - startTilt)
     local startPan = theTrack[startRing].pan
     local pan = startPan
 
@@ -515,7 +516,7 @@ function InsertLoopyLoop(theTrack, apexNode, circumference)
     local panRejoinSpan = math.max(circumference*2, 200)
     local panRejoinNode = math.min(#theTrack, endRing + panRejoinSpan)
 
-    if theTrack[panRejoinNode].pan > startPan then
+    if (not invert and theTrack[panRejoinNode].pan > startPan) or (invert and theTrack[panRejoinNode].pan < startPan) then
     	panRate = -panRate -- the loop should bend towards the future track segments naturally
     end
 
@@ -541,63 +542,13 @@ function InsertLoopyLoop(theTrack, apexNode, circumference)
     return theTrack
 end
 
-function InsertLoopyLoop_inv(theTrack, apexNode, circumference)
-	circumference = math.floor(circumference)
-	apexNode = math.floor(apexNode)
-    local halfSize = math.floor(circumference / 2)
-
-    if (apexNode < halfSize) or ((apexNode + halfSize) > #theTrack) then
-    	return theTrack
-    end
-
-    local startRing = math.max(1,apexNode - halfSize)
-    local endRing = math.min(#theTrack, apexNode + halfSize)
-    local span = endRing - startRing
-    local startTilt = theTrack[startRing].tilt
-    local endOriginalTilt = theTrack[endRing].tilt
-    local endOriginalPan = theTrack[endRing].pan
-    local tiltDeltaOverEntireLoop = 360 + (endOriginalTilt - startTilt)
-    local startPan = theTrack[startRing].pan
-    local pan = startPan
-
-	local panConstant = 40 -- make this number bigger if you have problems with loops running into themselves
-    local panRate = panConstant / halfSize
-
-    local panRejoinSpan = math.max(circumference*2, 200)
-    local panRejoinNode = math.min(#theTrack, endRing + panRejoinSpan)
-
-    if theTrack[panRejoinNode].pan > startPan then
-    	panRate = -panRate -- the loop should bend towards the future track segments naturally
-    end
-
-    local midRing = startRing + halfSize + math.ceil(halfSize/10)
-
-    for i = startRing+1, endRing do
-        theTrack[i].tilt = startTilt + tiltDeltaOverEntireLoop * ((i - startRing) / span)
-
-        if i==midRing then panRate = -panRate end
-
-        pan = pan + panRate -- pan just a little while looping to make sure it doesn't run into itself
-        theTrack[i].pan = pan
-    end
-
-    local panDeltaCascade = theTrack[endRing].pan - endOriginalPan
-    local tiltDeltaCascade = theTrack[endRing].tilt - endOriginalTilt;
-    for i = endRing + 1, #theTrack do
-        theTrack[i].tilt = theTrack[i].tilt + tiltDeltaCascade
-        theTrack[i].pan = theTrack[i].pan + panDeltaCascade
-        theTrack[i].funkyrot = true
-    end
-
-    return theTrack
-end
-
-function InsertCorkscrew(theTrack, startNode, endNode)
+function InsertCorkscrew(theTrack, startNode, endNode, invert)
+	if type(invert) ~= "boolean" then invert = false end
 	startNode = math.floor(startNode)
 	endNode = math.floor(endNode)
 	if endNode < #theTrack then
 		local cumulativeRoll = theTrack[startNode].roll
-		local rollIncrement = (540-(1080*math.random(0, 1))) / (endNode-startNode)
+		local rollIncrement = fif(not invert, 540, -540) / (endNode-startNode)
 		--print("endNode:"..endNode)
 		local endOriginalRoll = theTrack[endNode].roll
 
@@ -624,16 +575,21 @@ function OnRequestTrackReshaping(theTrack) -- put a loop at each powerpellet to 
 	for i=1,#powernodes do
 		local size = 100 + 100 * math.max(1,(theTrack[powernodes[i]].jumpairtime / 10))
 		theTrack = InsertLoopyLoop(theTrack, powernodes[i], size)
-		if i==1 then--double twist on the strongest loop
-			local quickscrewsize = 50
-			theTrack = InsertCorkscrew(theTrack, powernodes[i], powernodes[i]+quickscrewsize)
-			theTrack = InsertCorkscrew(theTrack, powernodes[i]+quickscrewsize, powernodes[i]+quickscrewsize+size*.75)
+		local randomBool = math.random() > 0.5
+		if i==1 then--double twist instant on the strongest loop
+			local startPos = powernodes[i]
+			local quickscrewsize = 75
+			theTrack = InsertCorkscrew(theTrack, startPos, startPos+quickscrewsize, not randomBool)
+			startPos = startPos + quickscrewsize
+			theTrack = InsertCorkscrew(theTrack, startPos, startPos+quickscrewsize, randomBool)
 		else
-			local quickscrewsize = 200
-			local randomRange = math.random(0, 250)
-			theTrack = InsertCorkscrew(theTrack, powernodes[i], (powernodes[i]+quickscrewsize))
-			theTrack = InsertCorkscrew(theTrack, (powernodes[i]+quickscrewsize)+randomRange, ((powernodes[i]+quickscrewsize)+randomRange)+quickscrewsize)
-			theTrack = InsertLoopyLoop_inv(theTrack, (powernodes[i]+quickscrewsize)+randomRange, size)
+			local startPos = powernodes[i]
+			local quickscrewsize = 150
+			local range = 150
+			theTrack = InsertCorkscrew(theTrack, startPos, startPos+quickscrewsize, not randomBool)
+			startPos = startPos + quickscrewsize + range
+			theTrack = InsertCorkscrew(theTrack, startPos, startPos+(quickscrewsize), randomBool)
+			theTrack = InsertLoopyLoop(theTrack, startPos, size, true)
 		end
 	end
 
