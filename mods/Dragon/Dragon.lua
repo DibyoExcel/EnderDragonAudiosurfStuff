@@ -728,18 +728,24 @@ end
 hitGrey = false
 function Collide(strafe, tracklocation)
 	local playerLane = 0.5;
-	--wow that hard than i exepected
-	if strafe == 0 then
-		playerLane = 0.5
-	elseif (strafe>0 and strafe<(half_lanespace*2)) then 
-		playerLane = 0.5
-	elseif strafe>(half_lanespace*2) then 
-		playerLane= 1.5
-	elseif (strafe<0 and strafe>-half_lanespace*2) then 
-		playerLane= -0.5
-	elseif strafe<-half_lanespace*2 then 
-		playerLane= -1.5
+	local rawLane = half_lanespace*2
+	local pos = math.floor((strafe/rawLane)) + 0.5
+	if strafe < 0 then
+		pos = math.ceil((strafe/rawLane)) - 0.5
 	end
+	playerLane = math.max(-1.5, math.min(1.5, pos))
+	-- --wow that hard than i exepected
+	-- if strafe == 0 then
+	-- 	playerLane = 0.5
+	-- elseif (strafe>0 and strafe<(half_lanespace*2)) then 
+	-- 	playerLane = 0.5
+	-- elseif strafe>=(half_lanespace*2) then 
+	-- 	playerLane= 1.5
+	-- elseif (strafe<0 and strafe>-half_lanespace*2) then 
+	-- 	playerLane= -0.5
+	-- elseif strafe<=-half_lanespace*2 then 
+	-- 	playerLane= -1.5
+	-- end
 
 	local collisionTolerenceAhead = .1
 	local collisionToleranceBehind_colors = 2.1
